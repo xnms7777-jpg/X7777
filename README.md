@@ -1,11 +1,1 @@
-https://vscode.dev/?vscode-lang=ar
-https://directory.getdrafts.com/a/22M
-https://mem.ai/login
-https://www.microsoft.comq/ar-sa/privacy/privacystatement
-https://vscode.dev/?vscode-lang=ar
-https://vscode.dev/?vscode-lang=ar
-https://vscode.dev/?vscode-lang=ar
-https://vscode.dev/msal?scopes=499b84ac-1321-427f-aa17-267ca6975798
-https://vscode.dev/?vscode-lang=ar
-https://app.raindrop.io/my/-1/item/1439165500/edit
-https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize?client_id=aebc6443-996d-45c2-90f0-388ff96faa56&scope=email%20offline_access%20openid%20profile%20User.Read&redirect_uri=https%3A%2F%2Fvscode.dev%2Fmsal&client-request-id=019a99f1-ee6d-76df-ab14-b4edb81c5120&response_mode=fragment&respondEgjaf-sarruc-wyrji7
+Mshahrani78@gmail.com import io.undertow.Undertow; import io.undertow.server.HttpHandler; import io.undertow.server.HttpServerExchange; import io.undertow.util.Headers; public static void main(String[] args) { public class App { Undertow server = Undertow.builder() .addHttpListener(8080, "localhost") .setHandler(new HttpHandler() { @Override public void handleRequest(HttpServerExchange exchange) throws Exception { exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain"); exchange.getResponseSender().send("Server is running!"); } }) .build(); server.start(); }	
