@@ -6,7 +6,6 @@ https://vscode.dev/?vscode-lang=ar
 https://vscode.dev/?vscode-lang=ar
 https://vscode.dev/?vscode-lang=ar
 https://vscode.dev/msal?scopes=499b84ac-1321-427f-aa17-267ca6975798
-%2F.default+offline_access&clientId=aebc6443-996d-45c2-90f0-388ff96faa56&authority=https%3A%2F%2Flogin.microsoftonline.com%2Forganizations
 https://vscode.dev/?vscode-lang=ar
 https://app.raindrop.io/my/-1/item/1439165500/edit
 https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize?client_id=aebc6443-996d-45c2-90f0-388ff96faa56&scope=email%20offline_access%20openid%20profile%20User.Read&redirect_uri=https%3A%2F%2Fvscode.dev%2Fmsal&client-request-id=019a99f1-ee6d-76df-ab14-b4edb81c5120&response_mode=fragment&respondEgjaf-sarruc-wyrji7
