@@ -1,0 +1,11 @@
+navigator.credentials.get({
+  publicKey: {
+    challenge: new Uint8Array(32),
+    rpId: location.hostname,
+    userVerification: "preferred"
+  }
+}).then(credential => {
+  console.log("تمت المصادقة:", credential);
+}).catch(error => {
+  console.log("لم تتم المصادقة:", error.name, error.message);
+});

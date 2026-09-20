@@ -1,0 +1,12 @@
+FROM archlinux
+
+RUN pacman -Sy --noconfirm git make cmake dotnet-sdk gcc-fortran gcc-ada gcc-gcobol rust go ghc-static haskell-base-prelude nasm python3 which ldc zig
+
+WORKDIR /compiled-languages-interoperability
+COPY include include
+COPY src src
+COPY scripts scripts
+COPY Makefile .
+
+RUN ["make"]
+CMD ["./a.out"]
