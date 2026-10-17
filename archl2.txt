@@ -1,0 +1,258 @@
+# Business Login for Instagram
+
+
+
+Business Login is a custom login flow that allows your app to ask for permissions to access your app user's Instagram professional account data and to get an access token to use in your app's API requests.
+
+**Warning:** To ensure consistency between scope values and permission names, we are introducing new `scope` values for the Instagram API with Instagram login. The new `scope` values are:
+
+* `instagram_business_basic`
+* `instagram_business_content_publish`
+* `instagram_business_manage_messages`
+* `instagram_business_manage_comments`
+
+These will replace the existing `business_basic`, `business_content_publish`, `business_manage_comments` and `business_manage_messages` `scope` values, respectively.
+
+Please note that the old scope values will be deprecated on **January 27, 2025**. It is essential to update your code before this date to avoid any disruption in your app's functionality. Failure to do so will result in your app being unable to call the Instagram endpoints.
+
+### How it works
+
+Your app user launches the login flow on your app or website by clicking your embed URL link or button. This embed URL, that you set up in the App Dashboard with the permissions you are requesting from your app users, opens an authorization window. Your app user uses this window to grant your app permissions. When the user submits the login flow, Meta redirects your app user to your redirect URI and sends an authorization code. Your app can then exchange this authorization code for a short-lived Instagram User access token, an Instagram-scoped user ID for your app user, and a list of permissions the app user granted your app. Your app can exchanged this short-lived access token for a long-lived Instagram user access token that is valid for 60 days.
+
+## Before you start
+
+If you haven't already, [add the Instagram product](https://developers.facebook.com/documentation/instagram-platform/create-an-instagram-app) to your app and configure your [**Business login settings**](https://developers.facebook.com/documentation/instagram-platform/create-an-instagram-app#step-9--set-up-business-login) in the Meta App Dashboard.
+
+### Embed the business login URL
+
+You should have completed this step during Instagram app setup in the App Dashboard, but if not, complete the following steps.
+
+1. Copy the **Embed URL** from the **Set up business login** in the App Dashboard.
+2. Paste the URL in an anchor tag or button on your app or website to launch the login flow.
+
+## Requirements
+
+This guide assumes you have read the [Instagram Platform Overview](https://developers.facebook.com/documentation/instagram-platform/overview) and implemented the needed components for using this API, such as a Meta login flow and a webhooks server to receive notifications.
+
+You will need the following:
+
+#### Access Level
+
+* Advanced Access if your app serves Instagram professional accounts you don't own or manage
+* Standard Access if your app serves Instagram professional accounts you own or manage and have added to your app in the App Dashboard
+
+#### Endpoints
+
+* `https://www.instagram.com/oauth/authorize` – To get an authorization code from your app user
+* `https://api.instagram.com/oauth/access_token`  – To exchange an authorization code for a short-lived access token
+* `https://graph.instagram.com/access_token`  – To exchange a valid short-lived access token for a long-lived access token
+* `https://graph.instagram.com/refresh_access_token` – To refresh a valid long-lived access token for another 60 days
+
+#### IDs from the Meta App Dashboard
+
+In the **App Dashboard > Instagram > API setup with Instagram login > 3. Set up Instagram business login > Business login settings**, you will need:
+
+* Your app's Instagram App ID
+* Your app's Instagram App Secret
+
+## Step 1. Get authorization
+
+When a person clicks your embed URL link or button to log in to your app, they are directed to an authorization window. This window allows your app users to grant your app permissions and short-lived Instagram User access tokens.
+
+#### Example embed URL
+
+_Formatted for readability._
+
+```html
+https://www.instagram.com/oauth/authorize
+  ?client_id=990602627938098
+  &redirect_uri=https://my.m.redirect.net/
+  &response_type=code
+  &scope=
+    instagram_business_basic,
+    instagram_business_manage_messages,
+    instagram_business_manage_comments,
+    instagram_business_content_publish
+```
+
+### Query string parameters
+
+| Parameter | Description |
+| --- | --- |
+| `client_id`  <br>**Required**  <br>*Numeric string* | Your app's Instagram App ID displayed in **App Dashboard > Instagram > API setup with Instagram login > 3. Set up Instagram business login > Business login settings > Instagram App ID**. |
+| `enable_fb_login`  <br>*Boolean* | Controls whether the Facebook Login option is displayed on the Instagram login page during OAuth authorization (the login page is only shown if the user is not logged in prior to beginning authorization flow or if the `force_reauth` parameter field is passed in).<br><br>If set to `true` (default), users will see the option to log in with Facebook when redirected to the Instagram login page. If set to `false`, the Facebook Login option will be hidden. |
+| `force_reauth`  <br>*Boolean* | Value can be `true` or `false`. When set to `true` it forces an app user to use their Instagram professional account credentials to log into your app even if the user is logged into Instagram. |
+| `redirect_uri`  <br>**Required**  <br>*String* | A URI where we will redirect users after they allow or deny permission request. Make sure this exactly matches one of the base URIs in your list of valid OAuth URIs you set during API setup in the App Dashboard. Keep in mind that the App Dashboard might have added a trailing slash to your URIs, so we recommend that you verify by checking the list.<br><br>**App Dashboard > Instagram > API setup with Instagram login > 3. Set up Instagram business login > Business login settings> OAuth redirect URIs**. |
+| `response_type`  <br>**Required**  <br>*String* | Set this value to `code`. |
+| `scope`  <br>**Required**  <br>*List* | A comma-separated or URL-encoded space-separated list of [permissions](https://developers.facebook.com/documentation/instagram-platform/overview#authorization) to request from the app user. |
+| `state`  <br>*String* | An optional value indicating a server-specific state. For example, you can use this to protect against CSRF issues. We will include this parameter and value when redirecting the user back to you. |
+
+### Successful authorization
+
+If authorization is successful, we will redirect your app user to your `redirect_uri` and pass you an **Authorization Code** through the `code` query string parameter. This code is valid for **1 hour** and can only be used once.
+
+Capture the code so your app can exchange it for a short-lived Instagram User access token.
+
+#### Example redirect URI response  
+
+```html
+https://my.m.redirect.net/?code=abcdefghijklmnopqrstuvwxyz#_
+```
+
+**NOTE:** The `#_` appended to the end of the redirect URI is not part of the code itself, so strip it out.
+
+### Canceled authorization
+
+If the user cancels the authorization flow, we will redirect the user to your `redirect_uri` and attach the following error parameters. *It is your responsibility to fail gracefully in these situations and display an appropriate message to your app users*.
+
+| Parameter | Value |
+| --- | --- |
+| `error` | `access_denied` |
+| `error_reason` | `user_denied` |
+| `error_description` | `The+user+denied+your+request` |
+
+#### Sample Canceled Authorization Redirect
+
+_Formatted for readability._
+
+```html
+https://my.m.redirect.net/auth/
+  ?error=access_denied
+  &error_reason=user_denied
+  &error_description=The+user+denied+your+request
+```
+
+## Step 2.  Exchange the Code For a Token
+
+To get the access token, send a `POST` request to the `https://api.instagram.com/oauth/access_token` endpoint with the following parameters:
+
+* `client_id` set to your app's Instagram app ID from the App Dashboard
+* `client_secret` set to your app's Instagram App Secret from the App Dashboard
+* `grant_type` set to `authorization_code`
+* `redirect_uri` set to your redirect URI
+* `code` set to the `code` value from the redirect URI response
+
+#### Sample request
+
+_Formatted for readability._
+
+```
+curl -X POST https://api.instagram.com/oauth/access_token \
+  -F 'client_id=990602627938098' \
+  -F 'client_secret=a1b2C3D4' \
+  -F 'grant_type=authorization_code' \
+  -F 'redirect_uri=https://my.m.redirect.net/' \
+  -F 'code=AQBx-hBsH3...'
+```
+
+On success, your app receives a JSON response containing the app user's short-lived access token, their Instagram App-scoped User ID, and a list of the permissions granted by the app user.
+
+```curl
+{
+  "data": [
+    {
+      "access_token": "EAACEdEose0...",
+      "user_id": "1020...",                // Your app user's Instagram-scoped user ID
+      "permissions": "instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments,instagram_business_content_publish"
+    }
+  ]
+}
+```
+
+Capture the `access_token` value. This is the user’s short-lived Instagram User access token which your app can use to access Instagram API with Instagram Login [endpoints](https://developers.facebook.com/documentation/instagram-platform/instagram-api-with-instagram-login/get-started).
+
+### Parameter reference
+
+| Parameter | Sample Value | Description |
+| --- | --- | --- |
+| `client_id`  <br>**Required**  <br>*Numeric string* | `990602627938098` | Your app's Instagram App ID displayed in **App Dashboard > Instagram > API setup with Instagram login > 3. Set up Instagram business login > Business login settings > Instagram App ID**. |
+| `client_secret`  <br>**Required**  <br>*String* | `a1b2C3D4` | Your Instagram App Secret displayed in **App Dashboard > Instagram > API setup with Instagram login > 3. Set up Instagram business login > Business login settings > Instagram app secret**. |
+| `code`  <br>**Required**  <br>*String* | `AQBx-hBsH3...` | The authorization code we passed you in the `code` parameter when redirecting the user to your `redirect_uri`. |
+| `grant_type`  <br>**Required**  <br>*String* | `authorization_code` | Set this value to `authorization_code`. |
+| `redirect_uri`  <br>**Required**  <br>*String* | `https://my.m.redirect.net/` | The redirect URI you passed us when you directed the user to our Authorization Window. This must be the same URI or we will reject the request. **App Dashboard > Instagram > API setup with Instagram login > 3. Set up Instagram business login > Business login settings> OAuth redirect URIs**. |
+
+### Sample Rejected Response
+
+If the request is malformed in some way, the API will return an error.
+
+```json
+{
+  "error_type": "OAuthException",
+  "code": 400,
+  "error_message": "Matching code was not found or was already used"
+}
+```
+
+## Step 3. Get a long-lived access token {#long-lived}
+
+You can exchange your app user's short-lived access token for a long-lived access token that is valid for 60 days.
+
+### Requirements
+
+* The short-lived access token must be valid (not expired)
+* Requests for long-lived tokens **must be made in server-side code**. These requesting include your app secret which you never want to expose in client-side code or in an app binary that could be decompiled. Do not share your app secret with anyone, expose it in code, send it to a client, or store it in a device.
+
+To get a long-lived access token, send a `GET` request to the `/access_token` endpoint with the following parameters:
+
+- `grant_type` set  to `ig_exchange_token`
+- `client_secret` set to your Instagram app secret
+- Your app user's valid (unexpired) short-lived Instagram user access token
+
+#### Sample Requests
+_Formatted for readability._
+
+```curl
+curl -i -X GET "https://graph.instagram.com/access_token
+  ?grant_type=ig_exchange_token
+  &client_secret=a1b2C3D4
+  &access_token=EAACEdEose0..."
+```
+
+On success, your app receives a JSON response with your app user's long-lived access token, the token type, and the expiration.
+
+```json
+{
+  "access_token":"EAACEdEose0...",
+  "token_type": "bearer",
+  "expires_in": 5183944  // Number of seconds until token expires
+}
+```
+
+### Refresh a long-lived token
+
+Your app user's long-lived access token can be refreshed for another 60 days as long as the existing conditions are true:
+
+* The existing long-lived access token is at least 24 hours old
+* The existing long-lived access token is valide (not expired)
+* The app user has granted your app the `instagram_business_basic` permission
+
+Tokens that have not been refreshed in 60 days will expire and can no longer be refreshed.
+
+To exchange your app user's long-lived token that is set to expire, send a `GET` request to the `/refresh_access_token` endpoint with the following parameters:
+
+- `grant_type` set to `ig_refresh_token`
+- `access_token` set to the long-lived access token that is about to expire
+
+### Sample Requests
+
+_Formatted for readability._
+
+```curl
+curl -i -X GET "https://graph.instagram.com/refresh_access_token
+  ?grant_type=ig_refresh_token
+  &access_token=EAACEdEose0..."
+```
+
+On success, your app receives a JSON response with your app user's long-lived access token, the token type, and the expiration.
+
+```json
+{
+  "access_token":"EAACEdEose0...",
+  "token_type": "bearer",
+  "expires_in": 5183944  // Number of seconds until token expires
+}
+```
+
+## Next Steps
+
+Now that you have an access token, [learn how to get information about your app user's Instagram professional accounts in our Get Started guide.](https://developers.facebook.com/documentation/instagram-platform/instagram-api-with-instagram-login/get-started).
